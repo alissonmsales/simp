@@ -1,6 +1,5 @@
 import argparse
 from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
 
 def parse_argumentos():
     parser = argparse.ArgumentParser()
@@ -39,7 +38,6 @@ def main():
             print(item, end=" ")
         print('')
         print('----------')
-
 
 if __name__ == '__main__' :
     main()
