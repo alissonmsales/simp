@@ -8,12 +8,14 @@ from xlrd import open_workbook
 from xlutils.copy import copy
 from gensim.models import KeyedVectors
 
+
 def parse_argumentos():
     parser = argparse.ArgumentParser()
     parser.add_argument('-filename',
                         default='classificados/beyonce_cb50_v2.xls',
                         help='Caminho do xls.')
     return parser.parse_args()
+
 
 def ler_classificados(arq):
     # variável que irá ser retornada do tipo dict
@@ -24,7 +26,7 @@ def ler_classificados(arq):
 
     for rx in range(0, sh.nrows):
         codigo = sh.cell_value(rx, colx=0)
-        #trocar quando tiver duas palavras no nome
+        # trocar quando tiver duas palavras no nome
         posicao = codigo.split('_')[-2]
         original = sh.cell_value(rx, colx=1)
         candidata = sh.cell_value(rx, colx=2)
@@ -40,8 +42,9 @@ def ler_classificados(arq):
 
     return class_list
 
+
 def main():
-    zeros = [0,0,0,0]
+    zeros = [0, 0, 0, 0]
     # faz o parse dos argumentos recebidos
     args = parse_argumentos()
     arquivo = args.filename
@@ -53,7 +56,6 @@ def main():
     txt_orig = ""
     # apenas os indices do texto tokenizado original
     txt_filtrado = []
-    candidatas = []
 
     # controle
     print("---> 1. Carregando Texto")
@@ -142,7 +144,7 @@ def main():
                     if (txt_filtrado[tf_index+i][1] in modelo.wv.vocab) and pr:
                         elem.append(modelo[txt_filtrado[tf_index + i][1]])
                         pr = False
-                    i+=1
+                    i += 1
         elem.append(r.manhattan_distance(elem[7], elem[8]))
 
         # grava as informacoes iniciais
@@ -172,8 +174,8 @@ def main():
         s.write(elem_index, 213, elem[11])
 
         # printa a porcentagem
-        pctg = (elem_index+1 / tamanho) * 100
-        print("        (  {0:3.1f}% )".format(pctg))
+        pctg = ((elem_index+1) / tamanho) * 100
+        print("        (  {0:3.1f}% )".format(pctg), end='\r')
 
     del modelo
     print("--->10. Salvando XLS")
