@@ -6,4 +6,4 @@ Read model MXPOST/port/model : numPredictions=64, numParams=19231
 Read tagdict from MXPOST/port/tagdict
 *This is MXPOST (Version 1.0)*
 *Copyright (c) 1997 Adwait Ratnaparkhi*
-Sentence: 0 Length: 4298 Elapsed Time: 2.461 seconds.
+Sentence: 0 Length: 123 Elapsed Time: 0.062 seconds.

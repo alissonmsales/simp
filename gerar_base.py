@@ -1,12 +1,12 @@
 import argparse
 import rotinas as r
-import xlwt
 import xlrd
 
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from xlrd import open_workbook
 from xlutils.copy import copy
+from gensim.models import KeyedVectors
 
 def parse_argumentos():
     parser = argparse.ArgumentParser()
@@ -41,6 +41,7 @@ def ler_classificados(arq):
     return class_list
 
 def main():
+    zeros = [0,0,0,0]
     # faz o parse dos argumentos recebidos
     args = parse_argumentos()
     arquivo = args.filename
@@ -101,74 +102,82 @@ def main():
         if cd[0] in psic_dict:
             cl.append(psic_dict[cd[0]])
         else:
-            cl.append(0)
+            cl.append(zeros)
 
         if cd[1] in psic_dict:
             cl.append(psic_dict[cd[1]])
         else:
-            cl.append(0)
+            cl.append(zeros)
 
     rb = open_workbook(args.filename)
     wb = copy(rb)
     s = wb.get_sheet(0)
-    #wb.save('names.xls')
 
     print("---> 9. Buscando WE")
     tamanho = len(classificados)
-    anterior = []
+
+    # carrega o modelo de embedding
+    modelo = KeyedVectors.load_word2vec_format(
+        'we/cbow_s50.txt', unicode_errors="ignore")
+    if we == 'sg50':
+        modelo = KeyedVectors.load_word2vec_format(
+            'we/skip_s50.txt', unicode_errors="ignore")
+    elif we == 'g50':
+        modelo = KeyedVectors.load_word2vec_format(
+            'we/glove_s50.txt', unicode_errors="ignore")
 
     for elem_index, elem in enumerate(classificados):
-        # escreve numeros
-        elem.append(r.retornar_vetor([elem[2]], we))
-        elem.append(r.retornar_vetor([elem[3]], we))
+        elem.append(modelo[elem[2]])
+        elem.append(modelo[elem[3]])
 
+        # adiciona as palavras anterior e posterior
         for tf_index, tf in enumerate(txt_filtrado):
-            if tf[0] == elem[1]:
-                elem.append(r.retornar_vetor([txt_filtrado[tf_index-1]], we))
-                elem.append(r.retornar_vetor([txt_filtrado[tf_index+1]], we))
+            if tf[0] == int(elem[1]):
+                i = 1
+                pr = an = True
+                while(pr or an):
+                    if (txt_filtrado[tf_index-i][1] in modelo.wv.vocab) and an:
+                        elem.append(modelo[txt_filtrado[tf_index - i][1]])
+                        an = False
+                    if (txt_filtrado[tf_index+i][1] in modelo.wv.vocab) and pr:
+                        elem.append(modelo[txt_filtrado[tf_index + i][1]])
+                        pr = False
+                    i+=1
+        elem.append(r.manhattan_distance(elem[7], elem[8]))
 
+        # grava as informacoes iniciais
+        # nome da amostra
+        s.write(elem_index, 0, elem[0])
+        # posicao da palavra no texto original
+        s.write(elem_index, 1, elem[1])
+        # palavra original
+        s.write(elem_index, 2, elem[2])
+        # palavra candidata
+        s.write(elem_index, 3, elem[3])
+        # classe
+        s.write(elem_index, 4, elem[4])
 
-        for we_cdt, psico_cdt in zip(we_cand, psico_list):
-            coluna = 0
-            # grava nome da amostra
-            nome_amostra = nome_treinamento + '_' + str(
-                elem_index) + '_' + str(num_amostra)
-            ws1.write(it2, coluna, nome_amostra)
-            num_amostra += 1
+        # grava os dados psico.
+        for i in range(4):
+            s.write(elem_index, 5 + i, elem[5][i])
+            s.write(elem_index, 9 + i, elem[6][i])
 
-            # grava distancia entre vetores
-            coluna += 1
-            distancia = r.manhattan_distance(we_orig, we_cand)
-            ws1.write(it2, coluna, distancia)
+        # grava os embeddings
+        for i in range(50):
+            s.write(elem_index, 13 + i, (elem[7][i]).astype(float))
+            s.write(elem_index, 63 + i, (elem[8][i]).astype(float))
+            s.write(elem_index, 113 + i, (elem[9][i]).astype(float))
+            s.write(elem_index, 163 + i, (elem[10][i]).astype(float))
 
-            # grava 8 informacoes psico
-            coluna += 1
-            for psc1, psc2, in zip(psico_orig, psico_cdt):
-                ws1.write(it2, coluna, psc1)
-                ws1.write(it2, coluna + 4, psc2)
-                coluna += 1
+        s.write(elem_index, 213, elem[11])
 
-            # grava embeddings orig e cand
-            coluna += 4
-            for we1, we2 in zip(we_orig, we_cdt):
-                ws1.write(it2, coluna, we1.astype(float))
-                ws1.write(it2, coluna + 50, we2.astype(float))
-                coluna += 1
-
-            coluna += 50
-            for we1, we2 in zip(anterior, posterior):
-                ws1.write(it2, coluna, we1.astype(float))
-                ws1.write(it2, coluna + 50, we2.astype(float))
-                coluna += 1
-            it2 += 1
-        anterior = we_orig
-        # printa a porcentagem de candidatas escritas
-        pctg = (elem_index / (tamanho - 2)) * 100
+        # printa a porcentagem
+        pctg = (elem_index+1 / tamanho) * 100
         print("        (  {0:3.1f}% )".format(pctg))
 
-
+    del modelo
     print("--->10. Salvando XLS")
-    wb.save('treinamento/' + nome_treinamento + '.xls')
+    wb.save(args.filename)
 
 
 if __name__ == '__main__':

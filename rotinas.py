@@ -136,7 +136,6 @@ def lematizacao():
 
 def manhattan_distance(vec1, vec2):
     dist = 0.0
-    vec2 = vec2[0]
 
     for v1, v2 in zip(vec1, vec2):
         dist += abs(v1-v2)
