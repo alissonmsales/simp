@@ -15,7 +15,7 @@ def parse_argumentos():
                         help='Número de vizinhos da palavra original a '
                              'retornar como candidatas.')
     parser.add_argument('-texto',
-                        default='Embeddings/EST_2014_01_000496.txt',
+                        default='txt/frag.txt',
                         help='Caminho do texto.')
     return parser.parse_args()
 
@@ -24,7 +24,7 @@ def main():
     args = parse_argumentos()
     nome_treinamento = args.texto
     nome_treinamento = nome_treinamento.split('/')[1].split('.')[0]
-    nome_treinamento += '_'+args.we
+    # nome_treinamento += '_'+args.we
     # entrada do texto original
     # arq_txt = "Embeddings/EST_2014_01_000495_cleaned.txt"
     # nome_treinamento = 'EST_2014_01_000495'
@@ -60,6 +60,7 @@ def main():
             """ armazena apenas o indice da palavra que nao e stop-word """
             txt_filtrado.append([w_index, w.lower()])
     print("        (", len(txt_filtrado), ")")
+
     # controle
     print("---> 4. Buscando Palavras na Base de Embeddings")
 
@@ -68,6 +69,7 @@ def main():
     temp = r.buscar_embeddings(temp, args.we, int(args.viz))
     # txt_filtrado = [a.append(b)
     for a, b in zip(txt_filtrado, temp):
+        print(a,b) # excluir
         if b:
             candidatas.append([a[0], a[1], b])
             candidatas_dict[a[0]] = a[1]
@@ -83,11 +85,19 @@ def main():
     for c_index, c in enumerate(candidatas):
         # print(c)
         k = c[1]
+        if k in freq_dict:
+            print(k+" = "+str(freq_dict[k]))
+        else:
+            print(k+" nao tá")
         if k in freq_dict and freq_dict[k]<3000:
             # print(k,': palavra no dic')
             # palavra candidata
             #print(c[2])
             for cand in reversed(c[2]):
+                if cand in freq_dict:
+                    print(cand + " == " + str(freq_dict[cand]))
+                else:
+                    print(cand + " nao tá--")
                 if cand not in freq_dict:
                     # print('cand removida pq nao ta na base de frequencia')
                     c[2].remove(cand)
@@ -114,7 +124,6 @@ def main():
     print("        (", len(candidatas), ")")
     # controle
     print("---> 6. Salvando Palaras Para Lematizar")
-
     # gravar arquivo texto com as palavras
     path = 'tmp/palavras.txt'
     with open(path, "w+") as arq:
@@ -128,6 +137,7 @@ def main():
     # controle
     #print("---> 7. Lematização")
     candidatas = zip(candidatas, r.lematizacao())
+    print(candidatas)
     new_candidatas = []
 
     for t in candidatas:
